@@ -41,8 +41,8 @@ endif(NOT ANDROID_NDK AND NOT BUILD_ATLAS_LIBS)
 message("BUILD_ATLAS_LIBS=${BUILD_ATLAS_LIBS}")
 if(BUILD_ATLAS_LIBS)
 	add_custom_target ( atlas_x86 ALL
-		COMMAND ./atlas_x86.sh config
-		COMMAND ./atlas_x86.sh build
+		COMMAND bash ./atlas_x86.sh config
+		COMMAND bash ./atlas_x86.sh build
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ATLAS )
 
 endif(BUILD_ATLAS_LIBS)
@@ -77,18 +77,14 @@ add_custom_target ( libffts_clean
 if(ANDROID_NDK)
 #rebuld ffts
 	add_custom_target ( libffts
-		COMMAND git clean -f -d
-		COMMAND	git reset --hard
-		COMMAND ./build_android.sh
+		COMMAND bash ./build_android.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
 
 else(ANDROID_NDK)
 
 	#rebuld ffts
 	add_custom_target ( libffts
-		COMMAND git clean -f -d
-		COMMAND	git reset --hard
-		COMMAND ./build_x86.sh
+		COMMAND bash ./build_x86.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
 
 endif(ANDROID_NDK)
@@ -106,7 +102,7 @@ if(ANDROID_NDK)
 	add_custom_target ( libblis
 #		COMMAND git clean -f -d
 #		COMMAND	git reset --hard
-		COMMAND ./build_android.sh
+		COMMAND bash ./build_android.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
 
 else(ANDROID_NDK)
@@ -115,7 +111,7 @@ else(ANDROID_NDK)
 	add_custom_target ( libblis
 #		COMMAND git clean -f -d
 #		COMMAND	git reset --hard
-		COMMAND ./build_x86.sh
+		COMMAND bash ./build_x86.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
 endif(ANDROID_NDK)
 
@@ -126,7 +122,7 @@ if(ANDROID_NDK)
 	add_custom_target ( lapack
 #		COMMAND git clean -f -d
 #		COMMAND	git reset --hard
-		COMMAND ./build_android_cmake.sh
+		COMMAND bash ./build_android_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
 
 else(ANDROID_NDK)
@@ -135,21 +131,21 @@ else(ANDROID_NDK)
 	add_custom_target ( lapack
 #		COMMAND git clean -f -d
 #		COMMAND	git reset --hard
-		COMMAND ./build_x86_cmake.sh
+		COMMAND bash ./build_x86_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
 endif(ANDROID_NDK)
 # --------------------------------------------------
 if(ANDROID_NDK)
 #android
 	add_custom_target ( libdsp
-		COMMAND ./build_android_cmake.sh
+		COMMAND bash ./build_android_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
 
 else(ANDROID_NDK)
 #x86
 	#rebuld ffts
 	add_custom_target ( libdsp
-		COMMAND ./build_x86_cmake.sh
+		COMMAND bash ./build_x86_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
 endif(ANDROID_NDK)
 # --------------------------------------------------
