@@ -11,9 +11,20 @@ message("DSP_BINARY_DIR : ${DSP_BINARY_DIR}")
 #${PROJECT_NAME} : Name of the "project" given to the project command.
 #${DSPLIB_SOURCE_DIR} : path of the "project" source given to the project command.
 #${DSPLIB_BINARY_DIR} : path of the "project" binary given to the project command.
+# --------------------------------------------------
+#In order to see the symbols from the static library, use:
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-all-symbols")
 
 # --------------------------------------------------
-#ATLAS
+# Organize output files.  On Windows this also keeps .dll files next
+# to the .exe files that need them, making tests easy to run.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
+
+# --------------------------------------------------
+#ATLAS for x86 only
+# --------------------------------------------------
 option(BUILD_ATLAS_LIBS "Whether or not to build ATLAS library for x86" OFF)
 add_custom_target ( atlas_clean
 	COMMAND make clean
@@ -59,6 +70,7 @@ endif(NOT ANDROID_NDK)
 
 # --------------------------------------------------
 #find ffts
+# --------------------------------------------------
 find_path(FFTS_INC ffts.h
 			HINTS ${DSP_SOURCE_DIR}/ffts/include )
 message("FFTS_INC=${FFTS_INC}" )
@@ -90,7 +102,8 @@ else(ANDROID_NDK)
 endif(ANDROID_NDK)
 
 # --------------------------------------------------
-#find blis
+#find blis for android only to replace ATLAS
+# --------------------------------------------------
 #clean libffts if necessary
 add_custom_target ( blis_clean
 	COMMAND make clean
@@ -116,7 +129,8 @@ else(ANDROID_NDK)
 endif(ANDROID_NDK)
 
 # --------------------------------------------------
-#find LAPACK
+#find LAPACK for android only. x86 lapack is under ATLAS
+# --------------------------------------------------
 if(ANDROID_NDK)
 #android
 	add_custom_target ( lapack
@@ -135,6 +149,8 @@ else(ANDROID_NDK)
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
 endif(ANDROID_NDK)
 # --------------------------------------------------
+#build the final static .a or shared .so
+# --------------------------------------------------
 if(ANDROID_NDK)
 #android
 	add_custom_target ( libdsp
@@ -148,6 +164,8 @@ else(ANDROID_NDK)
 		COMMAND bash ./build_x86_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
 endif(ANDROID_NDK)
+# --------------------------------------------------
+
 # --------------------------------------------------
 #add_executable ( MyProjectOutput ctags.output )
 #add_library(${PROJECT_NAME} OBJECT ${SRC})
@@ -157,49 +175,20 @@ endif(ANDROID_NDK)
 #add_subdirectory(ffts)
 #add_subdirectory(LAPACK)
 ##add_subdirectory(clapack)
-#add_subdirectory(lib)
+#add_subdirectory(lib dsp-lib)
 ##add_subdirectory(libflame)
 
-#In order to see the symbols from the static library, use:
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-all-symbols")
-
 # --------------------------------------------------
-
-# Organize output files.  On Windows this also keeps .dll files next
-# to the .exe files that need them, making tests easy to run.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
-# --------------------------------------------------
-#x86.so
-#add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:lib>
-#                                   $<TARGET_OBJECTS:ffts>
-#                                   $<TARGET_OBJECTS:ATLAS>
-#                                   )
-
-#add_library(${PROJECT_NAME} SHARED	$<TARGET_OBJECTS:ATLAS>
-#                                   )
 add_executable(dummy
   dummy.c
 )
 
+if(BUILD_ATLAS_LIBS)
+	if(NOT ANDROID_NDK)
+		add_dependencies(dummy atlas_x86)
+	endif(NOT ANDROID_NDK)
+endif(BUILD_ATLAS_LIBS)
 add_dependencies(dummy libffts)
 add_dependencies(dummy libblis)
-if(BUILD_ATLAS_LIBS)
-add_dependencies(dummy atlas_x86)
-endif(BUILD_ATLAS_LIBS)
 add_dependencies(dummy lapack)
 add_dependencies(dummy libdsp)
-
-#arm.so
-#add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:lib>
-#                                   $<TARGET_OBJECTS:ffts>
-#                                   $<TARGET_OBJECTS:blis>
-#                                   $<TARGET_OBJECTS:LAPACK>
-#                                   )
-
-#executable
-#add_executable(name_of_executable 	$<TARGET_OBJECTS:subproject1>
-#									$<TARGET_OBJECTS:subproject2>)
-#set(LINK_FLAGS ${LINK_FLAGS} "-Wl,-whole-archive")
-#target_link_libraries(name_of_executable ${PROJECT_NAME}
