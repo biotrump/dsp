@@ -6,3 +6,5 @@ clapack
 ffts
 LAPACK
 libflame
+build_x86
+build_and
