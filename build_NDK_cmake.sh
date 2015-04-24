@@ -62,11 +62,13 @@ export CBLAS_SRC=${CBLAS_SRC:-${LAPACK_SRC}/CBLAS}
 #Gingerbread	2.3 - 2.3.2	API level 9, NDK 5
 #Froyo	2.2.x	API level 8, NDK 4
 
-export NDK_ROOT=${NDK_ROOT:-${HOME}/NDK/android-ndk-r10d}
+export NDK_ROOT=${HOME}/NDK/android-ndk-r10d
 #gofortran is supported in r9
 #export NDK_ROOT=${HOME}/NDK/android-ndk-r9
 export ANDROID_NDK=${NDK_ROOT}
 
+if [[ ${NDK_ROOT} =~ .*"-r9".* ]]
+then
 #ANDROID_APIVER=android-8
 #ANDROID_APIVER=android-9
 #android 4.0.1 ICS and above
@@ -74,6 +76,11 @@ ANDROID_APIVER=android-14
 #TOOL_VER="4.6"
 #gfortran is in r9d V4.8.0
 TOOL_VER="4.8.0"
+else
+#android 4.0.1 ICS and above
+ANDROID_APIVER=android-14
+TOOL_VER="4.9"
+fi
 
 case $(uname -s) in
   Darwin)
@@ -152,7 +159,7 @@ fi
 rm -rf ${ARCHI}-${CMAKE_BUILD_TYPE}/*
 
 cd ${ARCHI}-${CMAKE_BUILD_TYPE}
-
+pwd
 #cmake and build
 cmake -DANDROID_NDK=${NDK_ROOT} -DANDROID_TOOLCHAIN_NAME=${TARGPLAT}-${TOOL_VER} \
 -DCMAKE_BUILD_TYPE=Release -DANDROID_ABI="armeabi-v7a with VFPV3" \
@@ -165,4 +172,4 @@ cmake -DANDROID_NDK=${NDK_ROOT} -DANDROID_TOOLCHAIN_NAME=${TARGPLAT}-${TOOL_VER}
 -DCBLAS_SRC:FILEPATH=${CBLAS_SRC} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 ${DSP_HOME}
 
-make -j${CORE_COUNT}
+#make -j${CORE_COUNT}
