@@ -82,23 +82,6 @@ ANDROID_APIVER=android-14
 TOOL_VER="4.9"
 fi
 
-case $(uname -s) in
-  Darwin)
-    CONFBUILD=i386-apple-darwin`uname -r`
-    HOSTPLAT=darwin-x86
-    CORE_COUNT=`sysctl -n hw.ncpu`
-  ;;
-  Linux)
-    CONFBUILD=x86-unknown-linux
-    HOSTPLAT=linux-`uname -m`
-    CORE_COUNT=`grep processor /proc/cpuinfo | wc -l`
-  ;;
-CYGWIN*)
-	CORE_COUNT=`grep processor /proc/cpuinfo | wc -l`
-	;;
-  *) echo $0: Unknown platform; exit
-esac
-
 #NDK cross compile toolchains
 #the first parameter is x86 or arm
 case $1 in
