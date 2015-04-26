@@ -104,7 +104,7 @@ endif(ANDROID_NDK)
 # --------------------------------------------------
 #find blis for android only to replace ATLAS
 # --------------------------------------------------
-#clean libffts if necessary
+#clean libblis if necessary
 add_custom_target ( blis_clean
 	COMMAND make clean
 	COMMAND git clean -f -d
