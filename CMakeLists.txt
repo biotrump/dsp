@@ -185,10 +185,16 @@ add_executable(dummy
 
 if(BUILD_ATLAS_LIBS)
 	if(NOT ANDROID_NDK)
-		add_dependencies(dummy atlas_x86)
+		add_dependencies(dummy atlas_x86
+		libffts
+		libblis
+		lapack
+		libdsp)
 	endif(NOT ANDROID_NDK)
+else(BUILD_ATLAS_LIBS)
+		add_dependencies(dummy
+		libffts
+		libblis
+		lapack
+		libdsp)
 endif(BUILD_ATLAS_LIBS)
-add_dependencies(dummy libffts)
-add_dependencies(dummy libblis)
-add_dependencies(dummy lapack)
-add_dependencies(dummy libdsp)
