@@ -30,21 +30,41 @@ esac
 #project dependant sources
 export DSP_HOME=${DSP_HOME:-`pwd`}
 export BLIS_SRC=${DSP_HOME}/blis
-#armv7a
-export BLISLIB_DIR=${BLISLIB_DIR:-${BLIS_SRC}/lib/armv7a}
-#libblis.a
-export BLIS_LIB_NAME=${BLIS_LIB_NAME:-blis}
-
 export FFTS_DIR=${DSP_HOME}/ffts
-export FFTS_LIB_DIR=${FFTS_DIR}/lib
-#libffts-arm.a
-FFTS_LIB_NAME=ffts-arm
-
 export LAPACK_SRC=${LAPACK_SRC:-${DSP_HOME}/LAPACK}
-export LAPACK_BUILD=${LAPACK_BUILD:-${LAPACK_SRC}/build_and}
-export LAPACK_LIB=${LAPACK_LIB:-${LAPACK_BUILD}/lib}
 export LAPACKE_SRC=${LAPACKE_SRC:-${LAPACK_SRC}/LAPACKE}
 export CBLAS_SRC=${CBLAS_SRC:-${LAPACK_SRC}/CBLAS}
+
+#default is arm
+export ARCHI=$1
+echo ARCHI=$ARCHI
+case $ARCHI in
+  arm)
+	#armv7a
+	export BLISLIB_DIR=${BLISLIB_DIR:-${BLIS_SRC}/lib/armv7a}
+	#libblis-NDK.a
+	export BLIS_LIB_NAME=${BLIS_LIB_NAME:-blis-NDK}
+	export FFTS_LIB_DIR=${FFTS_DIR}/lib
+	#libffts-NDK-arm.a
+	FFTS_LIB_NAME=ffts-NDK-arm
+	export LAPACK_BUILD=${LAPACK_BUILD:-${LAPACK_SRC}/build_NDK_arm}
+	;;
+  x86)
+	#armv7a
+	export BLISLIB_DIR=${BLISLIB_DIR:-${BLIS_SRC}/lib/sandybridge}
+	#libblis-NDK.a
+	export BLIS_LIB_NAME=${BLIS_LIB_NAME:-blis-NDK}
+	export FFTS_LIB_DIR=${FFTS_DIR}/lib
+	#libffts-NDK-x86.a
+	FFTS_LIB_NAME=ffts-NDK-x86
+	export LAPACK_BUILD=${LAPACK_BUILD:-${LAPACK_SRC}/build_NDK_x86}
+  ;;
+  mips)
+  ;;
+  *) echo $0: Unknown target; exit
+esac
+
+export LAPACK_LIB=${LAPACK_LIB:-${LAPACK_BUILD}/lib}
 
 # Make sure you have NDK_ROOT defined in .bashrc or .bash_profile
 # Modify INSTALL_DIR to suit your situation
@@ -83,37 +103,40 @@ TOOL_VER="4.9"
 fi
 
 #NDK cross compile toolchains
-#the first parameter is x86 or arm
-case $1 in
+
+case $ARCHI in
   arm)
     TARGPLAT=arm-linux-androideabi
     CONFTARG=arm-eabi
-    ARCHI=arm
+	echo "Using: $NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin"
+	#export PATH="$NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin/:\
+	#$NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/${TARGPLAT}/bin/:$PATH"
+	export PATH="${NDK_ROOT}/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin/:$PATH"
   ;;
   x86)
     TARGPLAT=i686-linux-android
     CONFTARG=x86
-    ARCHI=x86
+	echo "Using: $NDK_ROOT/toolchains/x86-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin"
+	export PATH="${NDK_ROOT}/toolchains/x86-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin/:$PATH"
+#specify assembler for x86 SSE3, but ffts's sse.s needs 64bit x86.
+#intel atom z2xxx and the old atoms are 32bit, so 64bit x86 in android can't work in
+#most atom devices.
+#http://forum.cvapp.org/viewtopic.php?f=13&t=423&sid=4c47343b1de899f9e1b0d157d04d0af1
+#	export  CCAS="${TARGPLAT}-as"
+#	export  CCASFLAGS="--64 -march=i686+sse3"
+#	export  CCASFLAGS="--64"
+
   ;;
   mips)
   ## probably wrong
     TARGPLAT=mipsel-linux-android
     CONFTARG=mips
-    ARCHI=mips
   ;;
   *) echo $0: Unknown target; exit
 esac
-echo ARCHI=$ARCHI
-
-#export NDK
 #: ${NDK_ROOT:?}
-
-echo "Using: $NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin"
-export ARCHI
-#export PATH="$NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin/:\
-#$NDK_ROOT/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/${TARGPLAT}/bin/:$PATH"
-export PATH="${NDK_ROOT}/toolchains/${TARGPLAT}-${TOOL_VER}/prebuilt/${HOSTPLAT}/bin/:$PATH"
 echo $PATH
+
 export SYS_ROOT="${NDK_ROOT}/platforms/${ANDROID_APIVER}/arch-${ARCHI}/"
 export CC="${TARGPLAT}-gcc --sysroot=$SYS_ROOT"
 export LD="${TARGPLAT}-ld"
@@ -135,24 +158,47 @@ if [ ! -d build_and ]; then
 mkdir build_and
 fi
 cd build_and
-if [ ! -d ${ARCHI}-${CMAKE_BUILD_TYPE} ]; then
-mkdir ${ARCHI}-${CMAKE_BUILD_TYPE}
-fi
 
+if [ ! -d ${ARCHI}-${CMAKE_BUILD_TYPE} ]; then
+	mkdir ${ARCHI}-${CMAKE_BUILD_TYPE}
+fi
 rm -rf ${ARCHI}-${CMAKE_BUILD_TYPE}/*
 
 cd ${ARCHI}-${CMAKE_BUILD_TYPE}
-pwd
-#cmake and build
-cmake -DANDROID_NDK=${NDK_ROOT} -DANDROID_TOOLCHAIN_NAME=${TARGPLAT}-${TOOL_VER} \
--DCMAKE_BUILD_TYPE=Release -DANDROID_ABI="armeabi-v7a with VFPV3" \
--DFFTS_DIR:FILEPATH=${FFTS_DIR} -DFFTS_LIB_DIR:FILEPATH=${FFTS_LIB_DIR} \
--DFFTS_LIB_NAME=${FFTS_LIB_NAME} \
--DLAPACK_SRC:FILEPATH=${LAPACK_SRC} -DLAPACK_BUILD:FILEPATH=${LAPACK_BUILD} \
--DLAPACK_LIB:FILEPATH=${LAPACK_LIB} -DLAPACKE_SRC:FILEPATH=${LAPACKE_SRC} \
--DUSE_BLIS=1 -DBLIS_SRC:FILEPATH=${BLIS_SRC} -DBLISLIB_DIR:FILEPATH=${BLISLIB_DIR} \
--DBLIS_LIB_NAME=${BLIS_LIB_NAME} \
--DCBLAS_SRC:FILEPATH=${CBLAS_SRC} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-${DSP_HOME}
+
+case $ARCHI in
+  arm)
+
+	cmake -DANDROID_NDK=${NDK_ROOT} -DANDROID_TOOLCHAIN_NAME=${TARGPLAT}-${TOOL_VER} \
+	-DANDROID_NATIVE_API_LEVEL=${ANDROID_APIVER} \
+	-DCMAKE_BUILD_TYPE=Release -DANDROID_ABI="armeabi-v7a with VFPV3" \
+	-DFFTS_DIR:FILEPATH=${FFTS_DIR} -DFFTS_LIB_DIR:FILEPATH=${FFTS_LIB_DIR} \
+	-DFFTS_LIB_NAME=${FFTS_LIB_NAME} \
+	-DLAPACK_SRC:FILEPATH=${LAPACK_SRC} -DLAPACK_BUILD:FILEPATH=${LAPACK_BUILD} \
+	-DLAPACK_LIB:FILEPATH=${LAPACK_LIB} -DLAPACKE_SRC:FILEPATH=${LAPACKE_SRC} \
+	-DUSE_BLIS=1 -DBLIS_SRC:FILEPATH=${BLIS_SRC} -DBLISLIB_DIR:FILEPATH=${BLISLIB_DIR} \
+	-DBLIS_LIB_NAME=${BLIS_LIB_NAME} \
+	-DCBLAS_SRC:FILEPATH=${CBLAS_SRC} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+	${DSP_HOME}
+
+	;;
+  x86)
+
+	cmake -DANDROID_NDK=${NDK_ROOT} -DANDROID_TOOLCHAIN_NAME=x86-${TOOL_VER} \
+	-DANDROID_NATIVE_API_LEVEL=${ANDROID_APIVER} \
+	-DCMAKE_BUILD_TYPE=Release -DANDROID_ABI="x86" \
+	-DFFTS_DIR:FILEPATH=${FFTS_DIR} -DFFTS_LIB_DIR:FILEPATH=${FFTS_LIB_DIR} \
+	-DFFTS_LIB_NAME=${FFTS_LIB_NAME} \
+	-DLAPACK_SRC:FILEPATH=${LAPACK_SRC} -DLAPACK_BUILD:FILEPATH=${LAPACK_BUILD} \
+	-DLAPACK_LIB:FILEPATH=${LAPACK_LIB} -DLAPACKE_SRC:FILEPATH=${LAPACKE_SRC} \
+	-DUSE_BLIS=1 -DBLIS_SRC:FILEPATH=${BLIS_SRC} -DBLISLIB_DIR:FILEPATH=${BLISLIB_DIR} \
+	-DBLIS_LIB_NAME=${BLIS_LIB_NAME} \
+	-DCBLAS_SRC:FILEPATH=${CBLAS_SRC} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+	${DSP_HOME}
+  ;;
+  mips)
+  ;;
+  *) echo $0: Unknown target; exit
+esac
 
 make -j${CORE_COUNT}

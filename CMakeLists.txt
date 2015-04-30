@@ -87,10 +87,20 @@ add_custom_target ( libffts_clean
 	WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
 
 if(ANDROID_NDK)
-#rebuld ffts
-	add_custom_target ( libffts
-		COMMAND bash ./build_android.sh
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
+	#rebuld ffts
+	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
+		add_custom_target ( libffts
+			COMMAND bash ./build_NDK.sh arm
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
+	elseif ("${ANDROID_ABI}" MATCHES "x86")
+		add_custom_target ( libffts
+			COMMAND bash ./build_NDK.sh x86
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
+	elseif ("${ANDROID_ABI}" MATCHES "mips")
+		add_custom_target ( libffts
+			COMMAND bash ./build_NDK.sh mips
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
+	endif ()
 
 else(ANDROID_NDK)
 
@@ -112,11 +122,28 @@ add_custom_target ( blis_clean
 	WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
 
 if(ANDROID_NDK)
-	add_custom_target ( libblis
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_android.sh
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
+		add_custom_target ( libblis
+	#		COMMAND git clean -f -d
+	#		COMMAND	git reset --hard
+			COMMAND bash ./build_android.sh arm
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+
+	elseif ("${ANDROID_ABI}" MATCHES "x86")
+		add_custom_target ( libblis
+	#		COMMAND git clean -f -d
+	#		COMMAND	git reset --hard
+			COMMAND bash ./build_android.sh x86
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+
+	elseif ("${ANDROID_ABI}" MATCHES "mips")
+		add_custom_target ( libblis
+	#		COMMAND git clean -f -d
+	#		COMMAND	git reset --hard
+			COMMAND bash ./build_android.sh mips
+			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+
+	endif ()
 
 else(ANDROID_NDK)
 #x86
@@ -133,11 +160,27 @@ endif(ANDROID_NDK)
 # --------------------------------------------------
 if(ANDROID_NDK)
 #android
-	add_custom_target ( lapack
+	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
+		add_custom_target ( lapack
 #		COMMAND git clean -f -d
 #		COMMAND	git reset --hard
-		COMMAND bash ./build_android_cmake.sh
+		COMMAND bash ./build_NDK_cmake.sh arm
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
+
+	elseif ("${ANDROID_ABI}" MATCHES "x86")
+		add_custom_target ( lapack
+#		COMMAND git clean -f -d
+#		COMMAND	git reset --hard
+		COMMAND bash ./build_NDK_cmake.sh x86
+		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
+
+	elseif ("${ANDROID_ABI}" MATCHES "mips")
+		add_custom_target ( lapack
+#		COMMAND git clean -f -d
+#		COMMAND	git reset --hard
+		COMMAND bash ./build_NDK_cmake.sh mips
+		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
+	endif ()
 
 else(ANDROID_NDK)
 #x86
@@ -153,9 +196,22 @@ endif(ANDROID_NDK)
 # --------------------------------------------------
 if(ANDROID_NDK)
 #android
-	add_custom_target ( libdsp
-		COMMAND bash ./build_android_cmake.sh
+
+	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
+		add_custom_target ( libdsp
+		COMMAND bash ./build_NDK_cmake.sh arm
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
+
+	elseif ("${ANDROID_ABI}" MATCHES "x86")
+		add_custom_target ( libdsp
+		COMMAND bash ./build_NDK_cmake.sh x86
+		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
+
+	elseif ("${ANDROID_ABI}" MATCHES "mips")
+		add_custom_target ( libdsp
+		COMMAND bash ./build_NDK_cmake.sh mips
+		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
+	endif ()
 
 else(ANDROID_NDK)
 #x86
@@ -182,6 +238,23 @@ endif(ANDROID_NDK)
 add_executable(dummy
   dummy.c
 )
+
+if(ANDROID_NDK)
+		add_dependencies(dummy
+		libffts
+		libblis
+		lapack
+		libdsp)
+else(ANDROID_NDK)
+	if(BUILD_ATLAS_LIBS)
+		add_dependencies(dummy
+		atlas_x86
+		libffts
+		libblis
+		lapack
+		libdsp)
+	endif(BUILD_ATLAS_LIBS)
+endif(ANDROID_NDK)
 
 if(BUILD_ATLAS_LIBS)
 	if(NOT ANDROID_NDK)
