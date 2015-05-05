@@ -64,14 +64,14 @@ if(ANDROID_NDK)
 
 else(ANDROID_NDK)
 	#clean libffts if necessary
-	add_custom_target ( libffts_clean
-		COMMAND rm -rf build_${TARGET_ARCH}/*
-		WORKING_DIRECTORY ${FFTS_DIR} )
+#	add_custom_target ( libffts_clean
+#		COMMAND rm -rf build_${TARGET_ARCH}/*
+#		WORKING_DIRECTORY ${FFTS_DIR} )
 
 	#rebuld ffts
-	add_custom_target ( libffts
-		COMMAND bash ./build_x86.sh
-		WORKING_DIRECTORY ${FFTS_DIR} )
+#	add_custom_target ( libffts
+#		COMMAND bash ./build_x86.sh
+#		WORKING_DIRECTORY ${FFTS_DIR} )
 
 endif(ANDROID_NDK)
 
@@ -84,14 +84,14 @@ if("${ATLAS_SRC}" STREQUAL "")
 endif()
 
 if(NOT ANDROID_NDK)
-	add_custom_target ( atlas_clean
-		COMMAND make clean
-		WORKING_DIRECTORY ${ATLAS_OUT} )
+#	add_custom_target ( atlas_clean
+#		COMMAND make clean
+#		WORKING_DIRECTORY ${ATLAS_OUT} )
 
-	add_custom_target ( atlas_x86 ALL
-		COMMAND bash ./atlas_x86.sh config
-		COMMAND bash ./atlas_x86.sh build
-		WORKING_DIRECTORY ${ATLAS_SRC} )
+#	add_custom_target ( atlas_x86 ALL
+#		COMMAND bash ./atlas_x86.sh config
+#		COMMAND bash ./atlas_x86.sh build
+#		WORKING_DIRECTORY ${ATLAS_SRC} )
 
 #x86 : ATLAS library
 	message("***find atlas")
