@@ -3,6 +3,7 @@
 #export CMAKE_BUILD_TYPE "Debug"
 export CMAKE_BUILD_TYPE="Release"
 
+if [ -z "${MAKE_FLAGS}" ];then
 case $(uname -s) in
   Darwin)
     CONFBUILD=i386-apple-darwin`uname -r`
@@ -19,28 +20,43 @@ CYGWIN*)
 	;;
   *) echo $0: Unknown platform; exit
 esac
+export MAKE_FLAGS="-j${CORE_COUNT}"
+fi
 
-export DSP_HOME=${DSP_HOME:-`pwd`}
-export BLIS_SRC=${DSP_HOME}/blis
-export BLISLIB=${BLISLIB:-${BLIS_SRC}/lib/sandybridge/libblis.a}
-#x86
-export BLISLIB_DIR=${BLISLIB_DIR:-${BLIS_SRC}/lib/sandybridge}
-#libblis.a
-export BLIS_LIB_NAME=${BLIS_LIB_NAME:-blis}
+if [ -z "$DSP_HOME" ];then
+	echo "No shell ENVS are exported from .config by setup.sh"
+	echo "so export it again by ../setup.sh"
+	pushd ..
+	if [ -f .config ];then
+	. setup.sh
+	else
+		echo `pwd`/.config does not exist, exit!
+		exit -1
+	fi
+	popd
+	exit
+	#export DSP_HOME=${DSP_HOME:-`pwd`}
+	#export ATLAS_SRC=${DSP_HOME}/ATLAS
+	#export ATLAS_OUT=${ATLAS_SRC}/build_x86
+	#export LAPACK_SRC=${LAPACK_SRC:-${DSP_HOME}/LAPACK}
+	export LAPACK_BUILD=${LAPACK_BUILD:-${LAPACK_SRC}/build-x86}
+	export LAPACK_LIB=${LAPACK_LIB:-${LAPACK_BUILD}/lib}
+	export LAPACKE_SRC=${LAPACKE_SRC:-${LAPACK_SRC}/LAPACKE}
+	export CBLAS_SRC=${CBLAS_SRC:-${LAPACK_SRC}/CBLAS}
+	#export BUILD_HOME=${BUILD_HOME:-$HOME/build}
 
-export FFTS_DIR=${DSP_HOME}/ffts
-export FFTS_LIB_DIR=${FFTS_DIR}/lib
-#libffts-x86.a
-export FFTS_LIB_NAME=ffts-x86
+	export BLIS_SRC=${DSP_HOME}/blis
+	export BLISLIB=${BLISLIB:-${BLIS_SRC}/lib/sandybridge/libblis.a}
+	#x86
+	export BLISLIB_DIR=${BLISLIB_DIR:-${BLIS_SRC}/lib/sandybridge}
+	#libblis.a
+	export BLIS_LIB_NAME=${BLIS_LIB_NAME:-blis}
 
-export ATLAS_SRC=${DSP_HOME}/ATLAS
-export ATLAS_OUT=${ATLAS_SRC}/build_x86
-export LAPACK_SRC=${LAPACK_SRC:-${DSP_HOME}/LAPACK}
-export LAPACK_BUILD=${LAPACK_BUILD:-${LAPACK_SRC}/build-x86}
-export LAPACK_LIB=${LAPACK_LIB:-${LAPACK_BUILD}/lib}
-export LAPACKE_SRC=${LAPACKE_SRC:-${LAPACK_SRC}/LAPACKE}
-export CBLAS_SRC=${CBLAS_SRC:-${LAPACK_SRC}/CBLAS}
-#export BUILD_HOME=${BUILD_HOME:-$HOME/build}
+	#export FFTS_DIR=${DSP_HOME}/ffts
+	export FFTS_LIB_DIR=${FFTS_DIR}/lib
+	#libffts-x86.a
+	export FFTS_LIB_NAME=ffts-x86
+fi
 
 if [ ! -d build_x86 ]; then
 mkdir build_x86
@@ -62,6 +78,6 @@ cmake -DFFTS_DIR:FILEPATH=${FFTS_DIR} \
 #-DLAPACK_LIB:FILEPATH=${LAPACK_LIB} -DLAPACKE_SRC:FILEPATH=${LAPACKE_SRC} \
 #-DCBLAS_SRC:FILEPATH=${CBLAS_SRC} ..
 
-make -j${CORE_COUNT}
+make ${MAKE_FLAGS} $@
 
 popd

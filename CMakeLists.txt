@@ -22,69 +22,29 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DSP_BINARY_DIR}/lib)
 
-# --------------------------------------------------
-#ATLAS for x86 only
-# --------------------------------------------------
-option(BUILD_ATLAS_LIBS "Whether or not to build ATLAS library for x86" OFF)
-add_custom_target ( atlas_clean
-	COMMAND make clean
-	WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ATLAS/build_x86 )
-
-if(NOT ANDROID_NDK AND NOT BUILD_ATLAS_LIBS)
-#x86 : ATLAS library
-	message("***find atlas")
-	set(ATLAS_LIB "lapacke;lapack;f77refblas;cblas;f77blas;ptlapack;ptf77blas;ptcblas;tstatlas;atlas")
-	#check if any lib does not exist. If anyone does not exist, rebuild it!
-	foreach(alib ${ATLAS_LIB})
-		UNSET(ATLASLIB CACHE)
-		find_library (ATLASLIB
-					NAMES ${alib}
-					PATHS ${DSP_SOURCE_DIR}/ATLAS/build_x86/lib
-					PATH_SUFFIXES lib
-					NO_DEFAULT_PATH)
-		message("ATLASLIB=${ATLASLIB} ")
-		if(NOT ATLASLIB)
-			set(BUILD_ATLAS_LIBS "ON")
-		endif(NOT ATLASLIB)
-	endforeach(alib)
-endif(NOT ANDROID_NDK AND NOT BUILD_ATLAS_LIBS)
-
-message("BUILD_ATLAS_LIBS=${BUILD_ATLAS_LIBS}")
-if(BUILD_ATLAS_LIBS)
-	add_custom_target ( atlas_x86 ALL
-		COMMAND bash ./atlas_x86.sh config
-		COMMAND bash ./atlas_x86.sh build
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ATLAS )
-
-endif(BUILD_ATLAS_LIBS)
-
-# --------------------------------------------------
-if(NOT ANDROID_NDK)
-	find_path(ATLAS_INC cblas.h
-				HINTS ${DSP_SOURCE_DIR}/ATLAS/include )
-	message("ATLAS_INC=${ATLAS_INC}" )
-	if(ATLAS_INC)
-		include_directories("${ATLAS_INC}")
-	endif(ATLAS_INC)
-endif(NOT ANDROID_NDK)
+if(NOT "${BCV_ENV_EXPORTED}" STREQUAL "1")
+#all shell ENVs are not exported!
+	include(../cmake/CVEnvImport.cmake)
+	UNSET(BCV_ENV_EXPORTED CACHE)
+	set(BCV_ENV_EXPORTED "1")
+	message("******MAKE_FLAGS=${MAKE_FLAGS}")
+endif()
 
 # --------------------------------------------------
 #find ffts
 # --------------------------------------------------
+message("FFTS_DIR=${FFTS_DIR}")
+if("${FFTS_DIR}" STREQUAL "")
+	set(FFTS_DIR "${DSP_SOURCE_DIR}/ffts")
+	message("set FFTS_DIR=${FFTS_DIR}")
+endif()
+
 find_path(FFTS_INC ffts.h
-			HINTS ${DSP_SOURCE_DIR}/ffts/include )
+			HINTS ${FFTS_DIR}/include )
 message("FFTS_INC=${FFTS_INC}" )
 if(FFTS_INC)
 	include_directories("${FFTS_INC}")
 endif(FFTS_INC)
-
-#message("FFTS_LIB_DIR=${FFTS_LIB_DIR} ")
-#clean libffts if necessary
-add_custom_target ( libffts_clean
-	COMMAND make clean
-	COMMAND git clean -f -d
-	COMMAND	git reset --hard
-	WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
 
 if(ANDROID_NDK)
 	#rebuld ffts
@@ -103,97 +63,74 @@ if(ANDROID_NDK)
 	endif ()
 
 else(ANDROID_NDK)
+	#clean libffts if necessary
+	add_custom_target ( libffts_clean
+		COMMAND rm -rf build_${TARGET_ARCH}/*
+		WORKING_DIRECTORY ${FFTS_DIR} )
 
 	#rebuld ffts
 	add_custom_target ( libffts
 		COMMAND bash ./build_x86.sh
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/ffts )
+		WORKING_DIRECTORY ${FFTS_DIR} )
 
 endif(ANDROID_NDK)
 
 # --------------------------------------------------
-#find blis for android only to replace ATLAS
+#ATLAS for x86 only
 # --------------------------------------------------
-#clean libblis if necessary
-add_custom_target ( blis_clean
-	COMMAND make clean
-	COMMAND git clean -f -d
-	COMMAND	git reset --hard
-	WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+if("${ATLAS_SRC}" STREQUAL "")
+	set(ATLAS_SRC "${DSP_SOURCE_DIR}/ATLAS")
+	message("set ATLAS_SRC=${ATLAS_SRC}")
+endif()
 
-if(ANDROID_NDK)
-	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
-		add_custom_target ( libblis
-	#		COMMAND git clean -f -d
-	#		COMMAND	git reset --hard
-			COMMAND bash ./build_android.sh arm
-			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+if(NOT ANDROID_NDK)
+	add_custom_target ( atlas_clean
+		COMMAND make clean
+		WORKING_DIRECTORY ${ATLAS_OUT} )
 
-	elseif ("${ANDROID_ABI}" MATCHES "x86")
-		add_custom_target ( libblis
-	#		COMMAND git clean -f -d
-	#		COMMAND	git reset --hard
-			COMMAND bash ./build_android.sh x86
-			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+	add_custom_target ( atlas_x86 ALL
+		COMMAND bash ./atlas_x86.sh config
+		COMMAND bash ./atlas_x86.sh build
+		WORKING_DIRECTORY ${ATLAS_SRC} )
 
-	elseif ("${ANDROID_ABI}" MATCHES "mips")
-		add_custom_target ( libblis
-	#		COMMAND git clean -f -d
-	#		COMMAND	git reset --hard
-			COMMAND bash ./build_android.sh mips
-			WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
+#x86 : ATLAS library
+	message("***find atlas")
+	set(ATLAS_LIB "lapacke;lapack;f77refblas;cblas;f77blas;ptlapack;ptf77blas;ptcblas;tstatlas;atlas")
+	#check if any lib does not exist. If anyone does not exist, rebuild it!
+	foreach(alib ${ATLAS_LIB})
+		UNSET(ATLASLIB CACHE)
+		find_library (ATLASLIB
+					NAMES ${alib}
+					PATHS ${ATLAS_OUT}/lib
+					PATH_SUFFIXES lib
+					NO_DEFAULT_PATH)
+		message("ATLASLIB=${ATLASLIB} ")
+	endforeach(alib)
 
-	endif ()
-
-else(ANDROID_NDK)
-#x86
-	#rebuld libblis
-	add_custom_target ( libblis
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_x86.sh
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/blis )
-endif(ANDROID_NDK)
-
+	find_path(ATLAS_INC atlas_f77.h
+				HINTS ${ATLAS_SRC}/include )
+	message("ATLAS_INC=${ATLAS_INC}" )
+	if(ATLAS_INC)
+		include_directories("${ATLAS_INC}")
+	endif(ATLAS_INC)
+endif(NOT ANDROID_NDK)
 # --------------------------------------------------
-#find LAPACK for android only. x86 lapack is under ATLAS
-# --------------------------------------------------
-if(ANDROID_NDK)
-#android
-	if ( "${ANDROID_ABI}" MATCHES "armeabi" )
-		add_custom_target ( lapack
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_NDK_cmake.sh arm
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
-
-	elseif ("${ANDROID_ABI}" MATCHES "x86")
-		add_custom_target ( lapack
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_NDK_cmake.sh x86
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
-
-	elseif ("${ANDROID_ABI}" MATCHES "mips")
-		add_custom_target ( lapack
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_NDK_cmake.sh mips
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
-	endif ()
-
-else(ANDROID_NDK)
-#x86
-	#rebuld ffts
-	add_custom_target ( lapack
-#		COMMAND git clean -f -d
-#		COMMAND	git reset --hard
-		COMMAND bash ./build_x86_cmake.sh
-		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/LAPACK )
-endif(ANDROID_NDK)
-# --------------------------------------------------
+#dsp/lib
 #build the final static .a or shared .so
 # --------------------------------------------------
+message("DSPLIB_DIR=${DSPLIB_DIR}")
+if("${DSPLIB_DIR}" STREQUAL "")
+	set(DSPLIB_DIR "${DSP_SOURCE_DIR}/lib")
+	message("set DSPLIB_DIR=${DSPLIB_DIR}")
+endif()
+
+find_path(DSPLIB_INC dsp-lib.h
+			HINTS ${DSPLIB_DIR} )
+message("DSPLIB_INC=${DSPLIB_INC}" )
+if(DSPLIB_INC)
+	include_directories("${DSPLIB_INC}")
+endif(DSPLIB_INC)
+
 if(ANDROID_NDK)
 #android
 
@@ -215,13 +152,11 @@ if(ANDROID_NDK)
 
 else(ANDROID_NDK)
 #x86
-	#rebuld ffts
 	add_custom_target ( libdsp
 		COMMAND bash ./build_x86_cmake.sh
 		WORKING_DIRECTORY ${DSP_SOURCE_DIR}/lib )
-endif(ANDROID_NDK)
-# --------------------------------------------------
 
+endif(ANDROID_NDK)
 # --------------------------------------------------
 #add_executable ( MyProjectOutput ctags.output )
 #add_library(${PROJECT_NAME} OBJECT ${SRC})
@@ -235,39 +170,19 @@ endif(ANDROID_NDK)
 ##add_subdirectory(libflame)
 
 # --------------------------------------------------
-add_executable(dummy
+add_executable(dsp-dummy
   dummy.c
 )
 
 if(ANDROID_NDK)
-		add_dependencies(dummy
+		add_dependencies(dsp-dummy
 		libffts
-		libblis
-		lapack
-		libdsp)
+		)
 else(ANDROID_NDK)
-	if(BUILD_ATLAS_LIBS)
-		add_dependencies(dummy
-		atlas_x86
+		add_dependencies(dsp-dummy
 		libffts
-		libblis
-		lapack
-		libdsp)
-	endif(BUILD_ATLAS_LIBS)
+		atlas_x86
+		libdsp
+		)
 endif(ANDROID_NDK)
 
-if(BUILD_ATLAS_LIBS)
-	if(NOT ANDROID_NDK)
-		add_dependencies(dummy atlas_x86
-		libffts
-		libblis
-		lapack
-		libdsp)
-	endif(NOT ANDROID_NDK)
-else(BUILD_ATLAS_LIBS)
-		add_dependencies(dummy
-		libffts
-		libblis
-		lapack
-		libdsp)
-endif(BUILD_ATLAS_LIBS)

@@ -9,7 +9,8 @@ fi
 #export CMAKE_BUILD_TYPE "Debug"
 export CMAKE_BUILD_TYPE="Release"
 
-#get cpu counts
+if("${MAKE_FLAGS}" STREQUAL "")
+
 case $(uname -s) in
   Darwin)
     CONFBUILD=i386-apple-darwin`uname -r`
@@ -26,6 +27,8 @@ CYGWIN*)
 	;;
   *) echo $0: Unknown platform; exit
 esac
+set(MAKE_FLAGS "-j${CORE_COUNT}")
+endif()
 
 #project dependant sources
 export DSP_HOME=${DSP_HOME:-`pwd`}
@@ -201,4 +204,4 @@ case $ARCHI in
   *) echo $0: Unknown target; exit
 esac
 
-make -j${CORE_COUNT}
+make ${MAKE_FLAGS} $@
